@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: energy-agent-deployment
+  namespace: management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: energy-agent
+  template:
+    metadata:
+      labels:
+        app: energy-agent
+    spec:
+      serviceAccountName: energy-agent-sa
+      containers:
+        - name: energy-agent
+          image: vancik01/energy-agent-1:latest
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "100m"
+          imagePullPolicy: Always

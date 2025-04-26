@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: energy-agent-svc
+  namespace: management
+spec:
+  selector:
+    app: energy-agent
+  ports:
+    - port: 3000
+      targetPort: 3000

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-simulators-deployment
+  namespace: testing
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: load-simulator
+  template:
+    metadata:
+      labels:
+        app: load-simulator
+    spec:
+      containers:
+        - name: load-simulator
+          image: vancik01/load-simulator
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

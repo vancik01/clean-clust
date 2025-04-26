@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: load-simulator-svc
+  namespace: testing
+spec:
+  selector:
+    app: load-simulator
+  ports:
+    - port: 3000
+      targetPort: 3000

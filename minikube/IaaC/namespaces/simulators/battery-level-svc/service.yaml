@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: battery-level-svc
+  namespace: simulators
+  labels:
+    app: battery-level
+spec:
+  selector:
+    app: battery-level
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

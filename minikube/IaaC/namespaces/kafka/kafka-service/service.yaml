@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: kafka
+  labels:
+    app: kafka
+spec:
+  ports:
+    - port: 9092
+      name: internal
+      protocol: TCP
+      targetPort: 9092
+    - port: 9093
+      name: external
+      protocol: TCP
+      targetPort: 9093
+  selector:
+    app: kafka
+  clusterIP: None
+  type: ClusterIP

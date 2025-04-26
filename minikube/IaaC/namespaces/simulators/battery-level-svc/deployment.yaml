@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: battery-level-deployment
+  namespace: simulators
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: battery-level
+  template:
+    metadata:
+      labels:
+        app: battery-level
+    spec:
+      containers:
+        - name: battery-level
+          image: vancik01/battery-level-simulator
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

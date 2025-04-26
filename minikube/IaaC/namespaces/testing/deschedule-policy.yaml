@@ -1,0 +1,16 @@
+apiVersion: "descheduler/v1alpha2"
+kind: "DeschedulerPolicy"
+profiles:
+  - name: ProfileName
+    pluginConfig:
+      - name: "RemovePodsViolatingNodeAffinity"
+        args:
+          nodeAffinityType:
+            - "requiredDuringSchedulingIgnoredDuringExecution"
+          namespaces:
+          include:
+            - "testing"
+    plugins:
+      deschedule:
+        enabled:
+          - "RemovePodsViolatingNodeAffinity"
