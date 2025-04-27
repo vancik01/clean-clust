@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: offloading-agent-config
+  namespace: management
+data:
+  ELECTRICITY_MAPS_AUTH_TOKEN: "YOUR_API_HERE"

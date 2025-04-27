@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: offloading-agent-svc
+  namespace: management
+spec:
+  selector:
+    app: offloading-agent
+  ports:
+    - port: 3000
+      targetPort: 3000

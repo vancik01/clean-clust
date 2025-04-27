@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: offloading-agent-deployment
+  namespace: management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: offloading-agent
+  template:
+    metadata:
+      labels:
+        app: offloading-agent
+    spec:
+      serviceAccountName: energy-agent-sa
+      containers:
+        - name: offloading-agent
+          image: local/exp2:latest
+          imagePullPolicy: Never
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          envFrom:
+            - configMapRef:
+                name: offloading-agent-config
