@@ -3,42 +3,17 @@ import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import path from 'path';
 import fs from 'fs/promises';
+import { ScalingEvent, Window } from './types';
 
-// Define types for our data
-export interface Window {
-    start: number;
-    end: number;
-    avgIntensity: number;
-    length: number;
-}
-
-export interface DailyWindows {
-    date: string;
-    windows: Window[];
-}
-
-export interface ScalingEvent {
-    id?: number;
-    timestamp: string;
-    hour: number;
-    deploymentName: string;
-    namespace: string;
-    targetReplicas: number;
-    reason: string;
-}
-
-// Make sure the DB directory exists
 async function ensureDbDirExists(dbPath: string): Promise<void> {
     const dir = path.dirname(dbPath);
     try {
         await fs.mkdir(dir, { recursive: true });
     } catch (err) {
-        // Directory already exists or can't be created
         console.error('Error creating DB directory:', err);
     }
 }
 
-// Initialize the database connection
 let db: Database | null = null;
 
 export async function initDatabase(dbPath: string): Promise<Database> {
@@ -74,7 +49,6 @@ export async function initDatabase(dbPath: string): Promise<Database> {
     return db;
 }
 
-// Store optimal windows for a day
 export async function storeOptimalWindows(date: string, windows: Window[]): Promise<void> {
     if (!db) {
         throw new Error('Database not initialized');
@@ -92,7 +66,6 @@ export async function storeOptimalWindows(date: string, windows: Window[]): Prom
     }
 }
 
-// Get optimal windows for a day
 export async function getOptimalWindows(date: string): Promise<Window[]> {
     if (!db) {
         throw new Error('Database not initialized');
@@ -114,7 +87,6 @@ export async function getOptimalWindows(date: string): Promise<Window[]> {
     }
 }
 
-// Log a scaling event
 export async function logScalingEvent(event: ScalingEvent): Promise<void> {
     if (!db) {
         throw new Error('Database not initialized');
@@ -139,7 +111,6 @@ export async function logScalingEvent(event: ScalingEvent): Promise<void> {
     }
 }
 
-// Get recent scaling events
 export async function getRecentScalingEvents(limit = 10): Promise<ScalingEvent[]> {
     if (!db) {
         throw new Error('Database not initialized');
@@ -157,7 +128,6 @@ export async function getRecentScalingEvents(limit = 10): Promise<ScalingEvent[]
     }
 }
 
-// Close the database connection
 export async function closeDatabase(): Promise<void> {
     if (db) {
         await db.close();

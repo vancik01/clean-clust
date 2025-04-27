@@ -172,12 +172,12 @@ Each operator runs as a **dockerized node.js app**. We are using `@kubernetes/cl
 
 Each operator code is split into several parts:
 - `external` folder contains functions to communicate with outside world, for example communicating with external APIs.
-- `k8s-management` folder contains code which monitors, modifies, creates Kubernetes resources.
+- `k8s-management` folder contains code which monitors, creates or updates Kubernetes resources (deployments, nodeAffinity, ...).
 - `monitorig` folder contains functions to communicate with Prometheus monitoring API within the cluster.
 - `config.ts` contains operator related configuration to define it's behavior
 - `main.ts` contains main operator loop to execute particular use case.
 
-In general, Operatrs follow this pattern:
+In general, Operators follow this pattern:
 
 ![Operator Cycle](images/operator-loop.png)
 1. **Observe:** Monitor cluster state and energy metrics through Prometheus and external APIs (carbon intensity, energy prices)

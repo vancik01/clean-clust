@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-message-publisher-deployment
+  namespace: simulators
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-message-publisher
+  template:
+    metadata:
+      labels:
+        app: kafka-message-publisher
+    spec:
+      containers:
+        - name: kafka-message-publisher
+          image: local/kafka-message-publisher:latest
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Never

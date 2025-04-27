@@ -41,3 +41,25 @@ export type PowerPortBreakdown = {
     pl: number;
     ua: number;
 }
+
+export interface Window {
+    start: number;
+    end: number;
+    avgIntensity: number;
+    length: number;
+}
+
+export interface DailyWindows {
+    date: string;
+    windows: Window[];
+}
+
+export interface ScalingEvent {
+    id?: number;
+    timestamp: string;
+    hour: number;
+    deploymentName: string;
+    namespace: string;
+    targetReplicas: number;
+    reason: string;
+}

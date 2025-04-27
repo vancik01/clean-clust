@@ -1,7 +1,7 @@
 const { Kafka } = require('kafkajs');
 const kafka = new Kafka({
     clientId: 'message-producer',
-    brokers: ['localhost:9093']  // Changed from kafka.kafka.svc.cluster.local:9092
+    brokers: ['kafka-0.kafka.kafka.svc.cluster.local:9092']
 });
 
 const producer = kafka.producer();
@@ -26,7 +26,6 @@ async function sendMessage(message) {
 
 async function runProducer() {
     try {
-        // send messages with incremental IDs indefinitely
         let i = 0;
 
         while (true) {
@@ -40,13 +39,12 @@ async function runProducer() {
             console.log(`Sent message #${i}`);
             i++;
 
-            // simulate delay between messages (1-2 seconds)
-            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+            // simulate delay between messages (1-3 seconds)
+            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 4000));
         }
     } catch (err) {
         console.error('Error in producer:', err);
     }
 }
 
-// Run the producer
 runProducer().catch(console.error);

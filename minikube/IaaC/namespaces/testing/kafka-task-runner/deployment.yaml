@@ -4,7 +4,7 @@ metadata:
   name: kafka-task-runner
   namespace: testing
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: kafka-task-runner
@@ -13,7 +13,7 @@ spec:
       labels:
         app: kafka-task-runner
     spec:
-      terminationGracePeriodSeconds: 30 # Adjust based on your task duration
+      terminationGracePeriodSeconds: 30
       containers:
         - name: kafka-task-runner
           image: local/task-runner:latest

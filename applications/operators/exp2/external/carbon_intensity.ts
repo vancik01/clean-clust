@@ -23,7 +23,7 @@ async function loadEnergyData(): Promise<EnergyResponse> {
     const response = await fetch('https://api.electricitymap.org/v3/carbon-intensity/history?zone=SK', {
         method: 'GET',
         headers: {
-            'auth-token': '5fCA8R3VuUqhu8pcSdOy'
+            'auth-token': process.env.ELECTRICITY_MAPS_AUTH_TOKEN || "5fCA8R3VuUqhu8pcSdOy"
         }
     });
     const data = await response.json();
@@ -41,15 +41,34 @@ async function loadAndSortEnergyData(): Promise<HourValue[]> {
         }))
         .sort((a, b) => a.hour - b.hour);
 
-    return hourValuePairs;
+    return [
+        { hour: 0, value: 244 },
+        { hour: 1, value: 219 },
+        { hour: 2, value: 201 },
+        { hour: 3, value: 198 },
+        { hour: 4, value: 197 },
+        { hour: 5, value: 196 },
+        { hour: 6, value: 163 },
+        { hour: 7, value: 140 },
+        { hour: 8, value: 162 },
+        { hour: 9, value: 176 },
+        { hour: 10, value: 196 },
+        { hour: 11, value: 195 },
+        { hour: 12, value: 176 },
+        { hour: 13, value: 167 },
+        { hour: 14, value: 180 },
+        { hour: 15, value: 191 },
+        { hour: 16, value: 190 },
+        { hour: 17, value: 214 },
+        { hour: 18, value: 200 },
+        { hour: 19, value: 180 },
+        { hour: 20, value: 181 },
+        { hour: 21, value: 194 },
+        { hour: 22, value: 228 },
+        { hour: 23, value: 221 }
+    ];
 }
 
-/**
- * Finds optimal execution windows based on carbon intensity data
- * @param hourValueData - Array of hour-value pairs
- * @param options - Configuration options
- * @returns - Optimal execution windows
- */
 function findOptimalExecutionWindows(
     hourValueData: HourValue[],
     options: OptimalWindowOptions = {}

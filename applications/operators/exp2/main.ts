@@ -1,43 +1,60 @@
-// main.ts
-import cron from 'node-cron';
+// main-simulated.ts
 import moment from 'moment';
-
 import { config } from './config';
-import { scaleDeployment } from './k8s-management/deployments';
-import { getMessagesInQueue } from './external/kafka';
-import { findOptimalExecutionWindows, loadAndSortEnergyData } from './external/carbon_intensity';
 import {
     initDatabase,
     storeOptimalWindows,
     getOptimalWindows,
     logScalingEvent,
     closeDatabase,
-    Window
 } from './database';
+import { findOptimalExecutionWindows, loadAndSortEnergyData } from './external/carbon_intensity';
+import { getMessagesInQueue } from './external/kafka';
+import { scaleDeployment } from './k8s-management/deployments';
+import { Window } from './types';
 
-// Function that runs at midnight every day to fetch optimal windows
+const MINUTE_PER_HOUR = 1; // Each hour runs for 1 minute
+const SIMULATION_SPEED = 60000; // 60 seconds per hour (in ms)
+
+class TimeSimulator {
+    private currentHour: number = 0;
+
+    constructor() {
+        this.currentHour = 0;
+    }
+
+    getCurrentHour(): number {
+        return this.currentHour;
+    }
+
+    advanceHour(): number {
+        this.currentHour = (this.currentHour + 1) % 24;
+        return this.currentHour;
+    }
+
+    formatCurrentTime(): string {
+        return `${String(this.currentHour).padStart(2, '0')}:00`;
+    }
+}
+
 async function fetchDailyOptimalWindows(): Promise<Window[]> {
-    console.log('🔍 Fetching optimal execution windows for today...');
-
-    const today = moment().format('YYYY-MM-DD');
+    console.log('🔍 Fetching optimal execution windows from real API...');
 
     try {
-        // Use your existing functions to get the data
         const hourValueData = await loadAndSortEnergyData();
 
-        // Find optimal windows using your existing function
         const optimalWindows = findOptimalExecutionWindows(hourValueData, {
             percentile: config.carbonIntensity.percentile,
             windowSize: config.carbonIntensity.windowSize,
             maxWindows: config.carbonIntensity.maxWindows
         }) as Window[];
 
-        console.log("\nOptimal execution windows for today:");
+        console.log("\nOptimal execution windows:");
         optimalWindows.forEach(window => {
             console.log(`Hours ${window.start}-${window.end} (${window.length} hours) with avg intensity: ${window.avgIntensity}`);
         });
 
-        // Store the windows for later use
+        const today = moment().format('YYYY-MM-DD');
         await storeOptimalWindows(today, optimalWindows);
 
         return optimalWindows;
@@ -47,46 +64,32 @@ async function fetchDailyOptimalWindows(): Promise<Window[]> {
     }
 }
 
-// Function that runs every hour to check if we're in an optimal window
-async function hourlyScalingCheck(): Promise<void> {
-    console.log('⏱️ Running hourly scaling check...');
+
+async function performHourlyScaling(timeSimulator: TimeSimulator, optimalWindows: Window[]): Promise<void> {
+    const currentHour = timeSimulator.getCurrentHour();
+    console.log(`\n===== SIMULATION HOUR: ${timeSimulator.formatCurrentTime()} =====`);
+
 
     try {
-        // Get current time data
-        const now = moment();
-        const today = now.format('YYYY-MM-DD');
-        const currentHour = now.hour();
-
-        console.log(`Current date: ${today}, hour: ${currentHour}`);
-
-        // Load today's optimal windows
-        let optimalWindows = await getOptimalWindows(today);
-
-        // If no windows found for today, fetch them
-        if (optimalWindows.length === 0) {
-            console.log('🔄 No optimal window data for today, fetching...');
-            optimalWindows = await fetchDailyOptimalWindows();
-        }
-
-        // Check if the current hour is within any optimal window
         const isOptimalHour = optimalWindows.some(window =>
             currentHour >= window.start && currentHour <= window.end
         );
 
-        // If we're going to scale down, check queue size first
-        if (!isOptimalHour && currentHour !== 0) {  // Skip lag check at midnight
-            const lag = await getMessagesInQueue({
-                brokers: config.kafka.brokers,
-                clientId: config.kafka.clientId,
-                groupId: config.kafka.groupId,
-                topic: config.kafka.topic,
-            });
+        const lag = await getMessagesInQueue({
+            brokers: config.kafka.brokers,
+            clientId: config.kafka.clientId,
+            groupId: config.kafka.groupId,
+            topic: config.kafka.topic,
+        });
 
-            console.log(`🕒 Current Kafka consumer lag: ${lag}`);
+        console.log(`🕒 Current Kafka consumer lag: ${lag}`);
 
-            // Don't scale down if there are still messages to process
+        if (!isOptimalHour && currentHour !== 0) {
+
             if (lag > config.scheduling.queueSizeThreshold) {
                 console.log(`⚠️ Not scaling down due to ${lag} messages still in queue`);
+
+                // Log this decision
                 await logScalingEvent({
                     timestamp: new Date().toISOString(),
                     hour: currentHour,
@@ -95,14 +98,14 @@ async function hourlyScalingCheck(): Promise<void> {
                     targetReplicas: -1, // Indicate no change
                     reason: `Skipped scale-down due to queue size (${lag} messages)`
                 });
+
                 return;
             }
         }
 
-        // Now correctly call scaleDeployment with 3 arguments
         if (isOptimalHour) {
             const targetReplicas = config.kubernetes.deployments.taskRunner.maxReplicas;
-            const reason = `Current hour (${currentHour}) is in optimal window`;
+            const reason = `Hour ${currentHour} is in optimal window`;
 
             console.log(`🟢 ${reason} - scaling up to ${targetReplicas}`);
 
@@ -112,7 +115,6 @@ async function hourlyScalingCheck(): Promise<void> {
                 targetReplicas
             );
 
-            // Log the event
             await logScalingEvent({
                 timestamp: new Date().toISOString(),
                 hour: currentHour,
@@ -123,7 +125,7 @@ async function hourlyScalingCheck(): Promise<void> {
             });
         } else {
             const targetReplicas = config.kubernetes.deployments.taskRunner.minReplicas;
-            const reason = `Current hour (${currentHour}) is NOT in optimal window`;
+            const reason = `Hour ${currentHour} is NOT in optimal window`;
 
             console.log(`🔴 ${reason} - scaling down to ${targetReplicas}`);
 
@@ -133,7 +135,6 @@ async function hourlyScalingCheck(): Promise<void> {
                 targetReplicas
             );
 
-            // Log the event
             await logScalingEvent({
                 timestamp: new Date().toISOString(),
                 hour: currentHour,
@@ -144,31 +145,62 @@ async function hourlyScalingCheck(): Promise<void> {
             });
         }
     } catch (err) {
-        console.error('❌ Error in hourly scaling check:', err);
+        console.error('❌ Error in scaling:', err);
     }
 }
 
-async function main(): Promise<void> {
-    console.log('🚀 Starting energy-optimal scheduling system');
+async function main() {
+    console.log(`🚀 Starting accelerated simulation (${MINUTE_PER_HOUR} minute = 1 hour)`);
 
     try {
+        // Initialize database
         await initDatabase(config.database.path);
-        console.log(`📊 Database initialized at ${config.database.path}`);
+        console.log('✅ Database initialized');
 
-        cron.schedule('0 0 * * *', fetchDailyOptimalWindows);
-        cron.schedule('0 * * * *', hourlyScalingCheck);
+        // Create time simulator
+        const timeSimulator = new TimeSimulator();
 
-        await fetchDailyOptimalWindows();
-        await hourlyScalingCheck();
+        // Fetch optimal windows from real API
+        const optimalWindows = await fetchDailyOptimalWindows();
 
-        console.log('✅ Energy-optimal scaling system is running');
+        console.log(`\n⏱️ Starting 24-hour simulation, each hour runs for ${MINUTE_PER_HOUR} minute...`);
+
+        // Run initial scaling for hour 0
+        await performHourlyScaling(timeSimulator, optimalWindows);
+
+        // Set up interval to run each "hour"
+        const intervalId = setInterval(async () => {
+            timeSimulator.advanceHour();
+            const currentHour = timeSimulator.getCurrentHour();
+
+            if (currentHour === 0) {
+                clearInterval(intervalId);
+                console.log('\n===== SIMULATION COMPLETE (FULL 24 HOURS) =====');
+                await closeDatabase();
+                process.exit(0);
+            } else {
+                await performHourlyScaling(timeSimulator, optimalWindows);
+            }
+        }, SIMULATION_SPEED);
+
+        process.on('SIGINT', async () => {
+            clearInterval(intervalId);
+            console.log('\n===== SIMULATION STOPPED BY USER =====');
+            await closeDatabase();
+            process.exit(0);
+        });
+
+        console.log('\nSimulation running... Press CTRL+C to stop.');
     } catch (err) {
-        console.error('❌ Failed to initialize the system:', err);
+        console.error('❌ Simulation failed:', err);
+        await closeDatabase();
         process.exit(1);
     }
 }
 
-main().catch(err => {
+// Start the simulation
+main().catch(async (err) => {
     console.error('Fatal error:', err);
+    await closeDatabase();
     process.exit(1);
 });

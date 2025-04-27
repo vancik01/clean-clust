@@ -13,7 +13,7 @@ export const config = {
         }
     },
     kafka: {
-        brokers: ["localhost:9093"],
+        brokers: ["kafka-0.kafka.kafka.svc.cluster.local:9092"],
         clientId: "task-runner",
         groupId: "task-group",
         topic: "workload-run-topic"
@@ -27,6 +27,6 @@ export const config = {
         path: path.join(__dirname, 'data', 'energy-optimizer.db')
     },
     scheduling: {
-        queueSizeThreshold: 10  // Max number of messages to allow scale down
+        queueSizeThreshold: 30  // Max number of messages to allow scale down
     }
 };

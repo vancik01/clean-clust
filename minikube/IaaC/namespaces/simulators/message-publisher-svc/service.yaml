@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kafka-message-publisher-svc
+  namespace: simulators
+  labels:
+    app: kafka-message-publisher
+spec:
+  selector:
+    app: kafka-message-publisher
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
