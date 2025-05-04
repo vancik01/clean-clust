@@ -1,10 +1,8 @@
-// main-simulated.ts
 import moment from 'moment';
 import { config } from './config';
 import {
     initDatabase,
     storeOptimalWindows,
-    getOptimalWindows,
     logScalingEvent,
     closeDatabase,
 } from './database';

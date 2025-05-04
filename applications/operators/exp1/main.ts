@@ -1,11 +1,11 @@
 import cron from 'node-cron';
-import { getActiveDeployments, placePodsAffinity, resetDeploymentAffinity } from './k8s-management/deployments';
+import { getActiveDeployments, placePodsAffinity } from './k8s-management/deployments';
 import { config } from './config';
 import { getAllNodesWithLabels } from './k8s-management/nodes';
 import { fetchBatteryLevelsAndTrends } from './external/battery_levels';
 
-const BASE_THRESHOLD = 30;
-const THRESHOLD_OFFSET = 5;
+const BASE_THRESHOLD = config.rescheduling.BASE_THRESHOLD;
+const THRESHOLD_OFFSET = config.rescheduling.THRESHOLD_OFFSET;
 
 async function prioritizeSolarNodesBasedOnBatteryTrends() {
     try {

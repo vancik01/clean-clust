@@ -30,7 +30,7 @@ export async function patchNodeLabel(node: V1Node, labelConfig: { [key: string]:
 
 export async function setNodeLabels(labelsMapper: { [x: string]: { [key: string]: string; }; }) {
     try {
-        const nodes = await k8sApi.listNode(); // Fetch all nodes
+        const nodes = await k8sApi.listNode();
         await Promise.all(
             nodes.body.items.map(async (node) => {
                 const nodeName = node?.metadata?.name || "";

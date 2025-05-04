@@ -41,32 +41,7 @@ async function loadAndSortEnergyData(): Promise<HourValue[]> {
         }))
         .sort((a, b) => a.hour - b.hour);
 
-    return [
-        { hour: 0, value: 244 },
-        { hour: 1, value: 219 },
-        { hour: 2, value: 201 },
-        { hour: 3, value: 198 },
-        { hour: 4, value: 197 },
-        { hour: 5, value: 196 },
-        { hour: 6, value: 163 },
-        { hour: 7, value: 140 },
-        { hour: 8, value: 162 },
-        { hour: 9, value: 176 },
-        { hour: 10, value: 196 },
-        { hour: 11, value: 195 },
-        { hour: 12, value: 176 },
-        { hour: 13, value: 167 },
-        { hour: 14, value: 180 },
-        { hour: 15, value: 191 },
-        { hour: 16, value: 190 },
-        { hour: 17, value: 214 },
-        { hour: 18, value: 200 },
-        { hour: 19, value: 180 },
-        { hour: 20, value: 181 },
-        { hour: 21, value: 194 },
-        { hour: 22, value: 228 },
-        { hour: 23, value: 221 }
-    ];
+    return hourValuePairs
 }
 
 function findOptimalExecutionWindows(
@@ -84,8 +59,6 @@ function findOptimalExecutionWindows(
     // Calculate threshold based on percentile
     const thresholdIndex = Math.floor(sortedByValue.length * (percentile / 100));
     const threshold = sortedByValue[thresholdIndex].value;
-
-    console.log(`Using threshold value of ${threshold} (${percentile}th percentile)`);
 
     const goodHours = hourValueData
         .filter(item => item.value <= threshold)
@@ -156,4 +129,4 @@ function calculateWindowIntensity(hours: number[], hourValueData: HourValue[]): 
     return count > 0 ? Math.round(total / count) : 0;
 }
 
-export { loadEnergyData, loadAndSortEnergyData, findOptimalExecutionWindows };
+export { loadAndSortEnergyData, findOptimalExecutionWindows };

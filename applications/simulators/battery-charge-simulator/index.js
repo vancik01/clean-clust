@@ -24,69 +24,101 @@ const powerConsumptionGauge = new client.Gauge({
     help: 'Simulated constant power consumption of the node in kW',
 });
 
-// Configuration
-const batteryCapacity = 1.5; // kWh - total battery capacity
-const consumptionRate = 0.08; // kW - constant power consumption (80W)
-const PV_nominal = 0.3; // kW - solar input (300W max)
-let batteryEnergy = batteryCapacity * 0.2; // Start at 20% battery at 6:00 AM
-const maxIrradiance = 1000; // Max solar radiation in W/m²
 
-// Simulation Configuration
-const realDuration = 60 * 60 * 1000; // 1 hour in real time
-const simulatedDuration = 24; // 24-hour simulated time
-const updateInterval = 10000; // updates battery every 10 seconds in real-time
-const timeMultiplier = simulatedDuration / (realDuration / updateInterval); // correct scaling factor
+const batteryCapacity = 1.8;
+const fullLoadConsumption = 0.15; // kW - consumption when running full workloads
+const idleConsumption = 0.03;    // kW - consumption when workloads are redirected (idle state)
+let currentConsumption = fullLoadConsumption; // Start with full workload
+const PV_nominal = 0.3;
+let batteryEnergy = batteryCapacity * 0.85;
+let workloadsRedirected = false;
 
+// Battery thresholds
+const lowBatteryThreshold = 20;
+const resumeWorkloadThreshold = 30;
 
-// simulate solar irradiance based on a sinusoidal 24h model
+const mayIrradianceData = [
+    0, 0, 0, 0, 11.142769739039789, 130.64209783591392, 233.04974371060143,
+    309.280548889313, 367.8028779544398, 411.89600020124465, 427.7489315940487,
+    421.243678546943, 417.8165459721911, 402.9242623084525, 375.72346476912344,
+    341.3922465776532, 289.0777817170322, 227.03551188414076, 87.62911688195105,
+    0, 0, 0, 0, 0
+];
+
+const maxIrradiance = Math.max(...mayIrradianceData);
+
+const simulationCycleMinutes = 24; // 24 minutes for full 24-hour cycle
+const updateInterval = 10000; // 10 seconds real time between updates - specified by Prometheus metrics collection cycle
+const updatesPerCycle = (simulationCycleMinutes * 60 * 1000) / updateInterval; // Total updates in one cycle
+const timeIncrement = 24 / updatesPerCycle; // How much time passes in each update
+
 function getIrradiance(currentTime) {
-    if (currentTime >= 6 && currentTime <= 18) {
-        return maxIrradiance * Math.sin(Math.PI * (currentTime - 6) / 12);
-    }
-    return 0;
+    const hourIndex = Math.floor(currentTime) % 24;
+    const nextHourIndex = (hourIndex + 1) % 24;
+
+    const fraction = currentTime - Math.floor(currentTime);
+
+    const currentHourIrradiance = mayIrradianceData[hourIndex];
+    const nextHourIrradiance = mayIrradianceData[nextHourIndex];
+
+    return currentHourIrradiance * (1 - fraction) + nextHourIrradiance * fraction;
 }
 
-// Function to update battery level dynamically
 function updateBatteryLevel(simulatedTime) {
     const irradiance = getIrradiance(simulatedTime);
     const pvPower = (irradiance / maxIrradiance) * PV_nominal; // kW
 
-    const dt = (updateInterval / 3600000) * simulatedDuration;
+    const dt = timeIncrement;
 
     const pvEnergy = pvPower * dt;
-    const consumptionEnergy = consumptionRate * dt;
 
-    // charge efficiency (95%)
+    const batteryPercentage = (batteryEnergy / batteryCapacity) * 100;
+
+    if (!workloadsRedirected && batteryPercentage < lowBatteryThreshold) {
+        workloadsRedirected = true;
+        currentConsumption = idleConsumption;
+        console.log(`[ALERT] Battery level below ${lowBatteryThreshold}% - Workloads redirected, consumption reduced to ${idleConsumption * 1000}W`);
+    }
+    else if (workloadsRedirected && batteryPercentage > resumeWorkloadThreshold) {
+        workloadsRedirected = false;
+        currentConsumption = fullLoadConsumption;
+        console.log(`[INFO] Battery level above ${resumeWorkloadThreshold}% - Workloads resumed, consumption back to ${fullLoadConsumption * 1000}W`);
+    }
+
+    const consumptionEnergy = currentConsumption * dt;
+
     const chargeEfficiency = 0.95;
     batteryEnergy = Math.max(0, Math.min(batteryCapacity, batteryEnergy + (pvEnergy * chargeEfficiency) - consumptionEnergy));
-    const batteryPercentage = (batteryEnergy / batteryCapacity) * 100;
+
+    // Update battery percentage after changes
+    const updatedBatteryPercentage = (batteryEnergy / batteryCapacity) * 100;
 
     // logging
     console.log(
-        `[Sim Time: ${simulatedTime.toFixed(2)}h] Irradiance: ${irradiance.toFixed(0)} W/m² | ` +
+        `[Sim Time: ${simulatedTime.toFixed(2)}h] Irradiance: ${irradiance.toFixed(1)} W/m² | ` +
         `PV Power: ${pvPower.toFixed(3)} kW | ` +
         `PV Energy: ${pvEnergy.toFixed(4)} kWh | ` +
+        `Consumption: ${currentConsumption.toFixed(3)} kW | ` +
         `Net Gain: ${(pvEnergy - consumptionEnergy).toFixed(4)} kWh | ` +
-        `Battery: ${batteryPercentage.toFixed(2)}%`
+        `Battery: ${updatedBatteryPercentage.toFixed(2)}% | ` +
+        `Workload State: ${workloadsRedirected ? "Redirected" : "Normal"} | ` +
+        `Real Time: ${new Date().toLocaleTimeString()}`
     );
 
     // Prometheus metrics
-    batteryLevelGauge.set(batteryPercentage);
+    batteryLevelGauge.set(updatedBatteryPercentage);
     solarInputGauge.set(pvPower);
-    powerConsumptionGauge.set(consumptionRate);
+    powerConsumptionGauge.set(currentConsumption);
 }
 
-// Start simulation from 6:00 AM
-let simulatedTime = 6.0;
+let simulatedTime = 18.0;
 
-// Simulation Loop (Simulates 24h in 1h real time)
 setInterval(() => {
     updateBatteryLevel(simulatedTime);
-    simulatedTime += timeMultiplier;
+    simulatedTime += timeIncrement;
 
-    if (simulatedTime >= 30) simulatedTime = 6; // Reset after 24h cycle
+    if (simulatedTime >= 24) simulatedTime = 0;
 }, updateInterval);
-
 
 app.get('/metrics', async (req, res) => {
     res.set('Content-Type', client.register.contentType);
@@ -95,5 +127,5 @@ app.get('/metrics', async (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Solar Battery Simulator running on port ${PORT}, metrics available at /metrics`);
+    console.log("Simulation running...")
 });

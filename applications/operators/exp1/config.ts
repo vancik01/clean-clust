@@ -3,10 +3,10 @@ export const config = {
     applyForNamespaces: ["testing"],
     monitoring: {
         prometheusUrl: "http://monitoring-kube-prometheus-prometheus.monitoring:9090/",
-        inClusterUrl: ""
     },
     rescheduling: {
-        batteryLevelTreshold: 20 // battery % to 
+        BASE_THRESHOLD: 30,
+        THRESHOLD_OFFSET: 5
     }
 }
 

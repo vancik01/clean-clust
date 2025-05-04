@@ -3,10 +3,26 @@
 Research project focus on optimizing energy consumption by using data-driven decisions based on data collcted from within the cluster
 
 ## Repository structure
-TODO: Tree
+```txt
+.
+├── applications
+│   ├── operators
+│   │   ├── exp1
+│   │   └── exp2
+│   └── simulators
+│       ├── battery-charge-simulator
+│       ├── kafka-message-publisher
+│       ├── load-testing-app
+│       └── task-runner
+├── grafana-dashboards
+├── images
+└── minikube
+    └── IaaC
+        └── namespaces
+```
 
 ## Requirements
-This guide outlines how to set up and test energy efficiency strategies in a Kubernetes environment using Minikube. Before beginning, ensure you have the following components installed and configured on your system:
+This guide outlines how to set up and test operator strategies in a Kubernetes environment using Minikube. Before beginning, ensure you have the following components installed and configured on your system:
 
 ### System Requirements
 
@@ -49,13 +65,12 @@ This guide outlines how to set up and test energy efficiency strategies in a Kub
 
 ### Clone the Repository
 
-TODO: add repo URL
 ```bash
-git clone https://github.com/yourusername/energy-efficient-k8s.git
-cd energy-efficient-k8s
+git clone https://github.com/vancik01/clean-clust.git
+cd clean-slust
 ```
 
-Once you have confirmed all prerequisites are met, you can proceed to the next section to set up your Minikube environment.
+Once you have confirmed all prerequisites are met, you can proceed to the next section to set up your Minikube local environment.
 
 ## Minikube Local Cluster Setup
 Following these steps, you will setup a minikube cluster locally, which will serve as our test platform for applications
@@ -130,13 +145,11 @@ To monitor and visualize cluster status, we used dashboards provided by [grafana
 
 To import a dashboard, navigate to `Grafana > Dashboards > New > Import`. Paste in a json code of the dashboard, then click Load and save. Dashbboard will appear in a list of available dashboards.
 
-### Dashboards
-
 | Dashboard Name | Preview | Download |
 |----------------|---------|-------------------|
 | Global View Dashboard | ![Global View Dashboard](images/grafana-dashboard-global.png) | [Download](grafana-dashboards/exp1-grafana-dashboard.json) |
-| Experiment 1 dashboard | ![Experiment 1 dashboard](images/grafana-dashboard-exp1.png) | [Download](https://github.com/dotdc/grafana-dashboards-kubernetes/blob/master/dashboards/k8s-system-api-server.json) |
-| Experiment 2 dashboard **TODO** | ![Node Resources](images/node-resources-preview.png) | [Download](https://github.com/dotdc/grafana-dashboards-kubernetes/blob/master/dashboards/k8s-system-coredns.json) |
+| Experiment 1 dashboard | ![Experiment 1 dashboard](images/grafana-dashboard-exp1.png) | [Download](grafana-dashboards/exp1-grafana-dashboard.json) |
+| Experiment 2 dashboard | ![Node Resources](images/grafana-dashboard-exp2.png) | [Download](grafana-dashboards/exp2-grafana-dashboard.json) |
 
 ## IaaC
 Our Kubernetes configurations follow a namespace-centric directory hierarchy that mirrors the logical separation within the cluster itself. Each namespace has its own directory containing all related resources, with service-specific components further organized into subdirectories. This approach ensures clear boundaries between different applications and environments while maintaining a consistent structure that's easy to navigate and maintain.
@@ -167,8 +180,19 @@ IaaC/
 
 ## Applications
 
+Each application is a Node.js application that is designed to run as a docker container inside the cluster. Each folder contains `Dockerfile` that is used to build the application as a docker container. 
+
+To build the docker containers, we used a `compile-docker-images.sh` script located in `applications` folder. This all alowed us to build all images at once. Each image is named `local/<folder_name>`. To build only a single container, you can specify the path to the application like so:
+```bash
+bash compile-docker-images.sh operators/exp1
+```
+
+This script also automatically pushes the container into a minikube cluster, so that it can run inside the cluster. Validate the images are present using `minikube image ls` command.
+
 ### Kubernetes Operators
-Each operator runs as a **dockerized node.js app**. We are using `@kubernetes/client-node` library to communicate with kubernetes API to perform actions within the cluster. Another core library is `node-cron`, which allows us to execute functions periodically in a defined intervals.
+Each operator runs as a **dockerized node.js app**. We are using `@kubernetes/client-node` ([Documentation](https://github.com/kubernetes-client/javascript)) library to communicate with kubernetes API to perform actions within the cluster. Another core library is `node-cron` ([Documentation](https://www.npmjs.com/package/node-cron)), which allows us to execute functions periodically in a defined intervals. Documentation to these libraryes are available at 
+
+The applications are designed to run directly inside the cluster. When ran locally, application will not be able to connect to prometheus service to collect and analyze metrics.
 
 Each operator code is split into several parts:
 - `external` folder contains functions to communicate with outside world, for example communicating with external APIs.
@@ -177,11 +201,11 @@ Each operator code is split into several parts:
 - `config.ts` contains operator related configuration to define it's behavior
 - `main.ts` contains main operator loop to execute particular use case.
 
-In general, Operators follow this pattern:
+In general, Our operators follow this pattern:
 
 ![Operator Cycle](images/operator-loop.png)
-1. **Observe:** Monitor cluster state and energy metrics through Prometheus and external APIs (carbon intensity, energy prices)
-2. **Analyze:** Compare current state to desired energy-optimized state using decision algorithms
+1. **Observe:** Monitor cluster state and energy metrics through Prometheus and external APIs (carbon intensity)
+2. **Analyze:** Compare current state to desired state using decision algorithms
 3. **Act:** Implement changes via standard Kubernetes APIs (affinity rules, deployment scaling, pod placement)
 4. **Repeat:** Continuously adapt to changing conditions on configurable intervals
 

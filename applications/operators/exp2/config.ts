@@ -1,4 +1,3 @@
-// config.ts
 import path from 'path';
 
 export const config = {

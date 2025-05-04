@@ -15,11 +15,11 @@ spec:
     spec:
       containers:
         - name: battery-level
-          image: vancik01/battery-level-simulator
+          image: local/battery-charge-simulator:latest
           resources:
             limits:
               memory: "256Mi"
               cpu: "250m"
           ports:
             - containerPort: 3000
-          imagePullPolicy: Always
+          imagePullPolicy: Never

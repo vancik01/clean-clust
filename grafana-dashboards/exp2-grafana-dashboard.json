@@ -15,7 +15,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 31,
+    "id": 40,
     "links": [],
     "panels": [
         {
@@ -102,13 +102,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum by (node) (rate(container_cpu_usage_seconds_total{pod=~\"load-simulators-deployment.*\", namespace=\"testing\"}[1m]))\n",
+                    "expr": "kube_deployment_status_replicas_available{namespace=\"testing\", deployment=\"kafka-task-runner\"}",
                     "legendFormat": "__auto",
                     "range": true,
                     "refId": "A"
                 }
             ],
-            "title": "CPU usage of load-testing app",
+            "title": "Number of pods",
             "type": "timeseries"
         },
         {
@@ -263,7 +263,7 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 9,
+                "h": 18,
                 "w": 12,
                 "x": 0,
                 "y": 8
@@ -285,9 +285,11 @@
             "pluginVersion": "11.5.1",
             "targets": [
                 {
-                    "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\",instance=~\"$node\"}[5m])) by (instance)",
+                    "editorMode": "code",
+                    "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\",instance=~\"$node\"}[1m])) by (instance)",
                     "interval": "",
                     "legendFormat": "{{instance}}",
+                    "range": true,
                     "refId": "A"
                 }
             ],
@@ -415,11 +417,7 @@
     "preload": false,
     "refresh": "auto",
     "schemaVersion": 40,
-    "tags": [
-        "k8s",
-        "node",
-        "monitoring"
-    ],
+    "tags": [],
     "templating": {
         "list": [
             {
@@ -443,13 +441,13 @@
         ]
     },
     "time": {
-        "from": "2025-05-01T18:21:00.000Z",
-        "to": "2025-05-01T18:45:00.000Z"
+        "from": "2025-04-27T16:13:00.000Z",
+        "to": "2025-04-27T16:40:49.000Z"
     },
     "timepicker": {},
     "timezone": "",
-    "title": "🟢 EXP1 - Solar powered node prioritization",
-    "uid": "k8s-node-utilization",
-    "version": 13,
+    "title": "🟢 EXP2 - Node utilization",
+    "uid": "fejpv25ar3bi8c",
+    "version": 6,
     "weekStart": ""
 }

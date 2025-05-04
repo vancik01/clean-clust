@@ -16,15 +16,11 @@ export async function getMessagesInQueue({
 
     try {
         await admin.connect();
-        // @ts-ignore
         const topicOffsets = await admin.fetchTopicOffsets(topic);
-        // @ts-ignore
         const groupOffsets = await admin.fetchOffsets({ groupId, topics: [topic] });
-        // @ts-ignore
         const committedPartitions = groupOffsets[0]?.partitions ?? [];
 
         let totalLag = 0;
-        // @ts-ignore
         topicOffsets.forEach((partition) => {
             const partitionId = partition.partition;
             const latestOffset = parseInt(partition.offset, 10);
@@ -42,7 +38,7 @@ export async function getMessagesInQueue({
 
         return totalLag;
     } catch (error) {
-        console.error('❌ Error calculating lag:', error);
+        console.error('❌ Error', error);
         throw error;
     } finally {
         await admin.disconnect();

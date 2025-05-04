@@ -1,2 +1,2 @@
 # Load Testing App
-This application is used for Use case 1: Prioritizing nodes powered by green energy. It simulates an application that processes a API requests from the clients.
+This application is used for Use case 1: Prioritizing nodes powered by solar energy. It runs a randomly generated tasks to simulate the real world behaviour and to generate CPU / Memory load in the cluster. To better simulate user behaviour, it implements a random gap (between 50ms and 500ms) between the task processing.

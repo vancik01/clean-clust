@@ -15,11 +15,11 @@ spec:
     spec:
       containers:
         - name: load-simulator
-          image: vancik01/load-simulator
+          image: local/load-testing-app
           resources:
             limits:
               memory: "512Mi"
               cpu: "250m"
           ports:
             - containerPort: 3000
-          imagePullPolicy: Always
+          imagePullPolicy: Never

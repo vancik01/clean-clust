@@ -4,14 +4,18 @@ This Node.js application is used for Use case 1: Prioritizing nodes powered by g
 - Dynamically updating battery levels based on solar input and node power consumption
 - Exposing Prometheus metrics that track battery level, solar power input, and power consumption
 
-The simulator helps the EXP1 operator test and validate strategies for prioritizing nodes with green energy sources by generating realistic battery charge and solar power data.
+The simulator helps the operator test and validate strategies for prioritizing nodes with green energy sources by generating realistic battery charge and solar power data.
+
+## Monitoring
+To monitor status of the battery, there has to be a ServiceMonitor resource applyed (defined in `/minikube/IaaC/namespaces/monitoring/battery-level-simulator-sm.yaml`)
 
 ## Simulation cycle
-When deployed to cluster, the application simulates battery level of a solar powered node. 
+When deployed to cluster, the application simulates battery level of a solar powered node. The application is desinged to simulate 1 hour in 1 minute. 
 
 ### Battery Parameters
 - `batteryCapacity`: Total amount of energy the battery can store
-- `consumptionRate`: Constant energy drain by the node's computing operations
+- `fullLoadConsumption`: Constant energy consumption by the node during prioritization
+- `idleConsumption`: Constant energy consumption during low battery levels (when tasks are forced to reschedule to other nodes)
 - `PV_nominal`: Maximum power generation capacity of the solar panels
 - `batteryEnergy`: Initial charge level when the simulation starts
 - `maxIrradiance`: Maximum potential solar radiation used for calculating power generation

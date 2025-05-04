@@ -1,4 +1,3 @@
-// database.ts
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import path from 'path';
@@ -10,7 +9,7 @@ async function ensureDbDirExists(dbPath: string): Promise<void> {
     try {
         await fs.mkdir(dir, { recursive: true });
     } catch (err) {
-        console.error('Error creating DB directory:', err);
+        console.error('❌ Error creating DB directory:', err);
     }
 }
 
@@ -28,7 +27,7 @@ export async function initDatabase(dbPath: string): Promise<Database> {
         driver: sqlite3.Database,
     });
 
-    // Create tables if they don't exist
+    // Create tables 
     await db.exec(`
     CREATE TABLE IF NOT EXISTS optimal_windows (
       date TEXT PRIMARY KEY,
@@ -59,16 +58,15 @@ export async function storeOptimalWindows(date: string, windows: Window[]): Prom
             'INSERT OR REPLACE INTO optimal_windows (date, windows_json) VALUES (?, ?)',
             [date, JSON.stringify(windows)]
         );
-        console.log(`✅ Stored optimal windows for ${date}`);
     } catch (err) {
-        console.error('❌ Error storing optimal windows:', err);
+        console.error('❌ Error:', err);
         throw err;
     }
 }
 
 export async function getOptimalWindows(date: string): Promise<Window[]> {
     if (!db) {
-        throw new Error('Database not initialized');
+        throw new Error('Database failed to initialize');
     }
 
     try {
@@ -82,7 +80,7 @@ export async function getOptimalWindows(date: string): Promise<Window[]> {
         }
         return [];
     } catch (err) {
-        console.error('❌ Error retrieving optimal windows:', err);
+        console.error('❌ Error:', err);
         return [];
     }
 }
@@ -107,7 +105,7 @@ export async function logScalingEvent(event: ScalingEvent): Promise<void> {
             ]
         );
     } catch (err) {
-        console.error('❌ Error logging scaling event:', err);
+        console.error('❌ Error:', err);
     }
 }
 
@@ -123,7 +121,7 @@ export async function getRecentScalingEvents(limit = 10): Promise<ScalingEvent[]
         );
         return rows as ScalingEvent[];
     } catch (err) {
-        console.error('❌ Error retrieving scaling events:', err);
+        console.error('❌ Error:', err);
         return [];
     }
 }
