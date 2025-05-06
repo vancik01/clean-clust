@@ -22,10 +22,15 @@ The application uses SQLite to store operational data in two tables:
 - `optimal_windows`: Stores daily execution windows (date and JSON-formatted window data)
 - `scaling_events`: Logs all scaling decisions with timestamps and deployment details
 
+## Prerequisitions
+- Kafka is deployed and configured in the minikube cluster (apply configuration in `minikube/IaaC/namespaces/kafka`)
+- ConfigMap for the operator with valid ElectricityMaps API key is applyed (`minikube/IaaC/namespaces/management/offloading-agent-svc/operator-cm.yaml`)
+
+
 ## Configuration
 Configuration is defined in `config.ts`:
-- `kubernetes`: Namespace and deployment settings, including min/max replica counts
-- `kafka`: Connection details and topic configuration for the message queue
+- `kubernetes`: Namespace and deployment settings, including min/max replica counts and to which application should the offloading be applyed
+- `kafka`: Connection details and topic configuration for the Kafka message queue
 - `carbonIntensity`: Algorithm parameters for identifying optimal windows
     - `percentile`: Sets threshold for identifying "low carbon" hours (default: 30%)
     - `windowSize`: Minimum consecutive hours required to form a processing window
